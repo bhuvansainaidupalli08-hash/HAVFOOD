@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="HAVFOOD — VIT-AP Mess Menu">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg">
+<link rel="stylesheet" href="style.css?v=5">
+<title>HAVFOOD</title>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="brand">
+    <img src="icons/havfood-logo.png" alt="HAVFOOD logo" class="brand-icon">
+    <span class="brand-name"><span class="brand-hav">HAV</span><span class="brand-food">FOOD</span><span class="brand-dot" aria-hidden="true"></span></span>
+  </div>
+  <div class="topbar-actions">
+    <button id="installBtn" class="icon-btn hidden" aria-label="Install HAVFOOD">＋</button>
+    <button id="hfHamburger" class="hamburger-btn" aria-label="Open menu">☰</button>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div>
+    <p class="eyebrow">VIT-AP MESS MENU</p>
+    <h1 id="heroDate">Today</h1>
+    <p id="heroSub">Your meals, without the search.</p>
+  </div>
+  <button id="calendarBtn" class="date-btn">📅 <span>Jump to date</span></button>
+</section>
+
+<section class="status-card">
+  <div class="status-icon">🍽️</div>
+  <div class="status-copy">
+    <span id="statusLabel">SERVING NOW</span>
+    <b id="statusMeal">Loading…</b>
+    <small id="statusTime"></small>
+  </div>
+  <div class="countdown" id="countdown">--:--</div>
+</section>
+
+<section class="segmented" aria-label="Mess selection">
+  <button class="active" data-mess="Veg & Non-Veg">Veg & Non-Veg</button>
+  <button data-mess="Special">Special Mess</button>
+</section>
+
+<section id="messDetails" aria-label="Mess Details">
+  <div class="section-head"><h2>🍽️ Mess Details</h2><span class="muted">HAVFOOD</span></div>
+  <div class="details-grid">
+    <article class="detail-card">
+      <div class="detail-icon">🥗</div>
+      <div><b>Veg &amp; Non-Veg Mess</b><small>Regular mess menu available in the selector above.</small></div>
+    </article>
+    <article class="detail-card">
+      <div class="detail-icon">⭐</div>
+      <div><b>Special Mess</b><small>Special Mess menu can be selected above.</small></div>
+    </article>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>7-Day Quick View</h2><button id="todayBtn" class="text-btn">Today</button></div>
+  <div id="week" class="week"></div>
+</section>
+
+<section>
+  <div class="section-head"><h2 id="menuTitle">Menu</h2><span id="resultCount" class="muted"></span></div>
+  <div id="menu" class="menu-grid"></div>
+</section>
+</main>
+
+<div id="dateModal" class="modal hidden">
+ <div class="modal-card">
+  <div class="modal-head"><h3>Choose a date</h3><button data-close="dateModal" aria-label="Close">×</button></div>
+  <input id="datePicker" type="date">
+  <button id="applyDate" class="primary">View Menu</button>
+ </div>
+</div>
+
+<div id="reminderModal" class="modal hidden">
+ <div class="modal-card">
+  <div class="modal-head"><h3>Meal reminders</h3><button data-close="reminderModal" aria-label="Close">×</button></div>
+  <p class="modal-note">Choose how early you want HAVFOOD to remind you.</p>
+  <div id="reminderOptions" class="reminder-options"></div>
+  <label class="switch-row"><span>Enable reminders</span><input id="reminderToggle" type="checkbox"><i></i></label>
+  <p class="tiny">Notifications require browser permission. For guaranteed background push, a push service/backend is needed.</p>
+ </div>
+</div>
+
+<!-- Hamburger Menu Drawer -->
+<div id="hfMenuOverlay" class="hf-menu-overlay hidden">
+  <aside class="hf-menu-panel" aria-label="Navigation Menu">
+    <div class="hf-menu-head">
+      <span class="hf-menu-title">Menu</span>
+      <button id="hfMenuClose" class="hf-menu-close" aria-label="Close menu">×</button>
+    </div>
+    <div class="hf-menu-items">
+      <button class="hf-menu-item" id="hfReminderBtn">
+        <span class="hf-menu-icon">🔔</span>
+        <span>Reminder</span>
+      </button>
+      <button class="hf-menu-item" id="hfChangeMonthBtn">
+        <span class="hf-menu-icon">📅</span>
+        <span>Change Month</span>
+      </button>
+      <button class="hf-menu-item" id="hfQueriesBtn">
+        <span class="hf-menu-icon">💡</span>
+        <span>Queries &amp; Suggestions</span>
+      </button>
+    </div>
+  </aside>
+</div>
+
+<!-- Change Month Modal -->
+<div id="hfMonthModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Change Month</h3>
+      <button data-close="hfMonthModal" aria-label="Close">×</button>
+    </div>
+    <p class="modal-note">Select an available month to view its menu.</p>
+    <div class="hf-field">
+      <label for="hfMonthSelect">Select Month</label>
+      <select id="hfMonthSelect" class="hf-select"></select>
+    </div>
+    <button id="hfApplyMonth" class="primary">Switch Month</button>
+  </div>
+</div>
+
+<!-- Queries & Suggestions Modal -->
+<div id="hfQueryModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Queries &amp; Suggestions</h3>
+      <button data-close="hfQueryModal" aria-label="Close">×</button>
+    </div>
+    <form id="hfQueryForm">
+      <div class="hf-field">
+        <label for="hfQueryCategory">Category</label>
+        <select id="hfQueryCategory" class="hf-select" required>
+          <option value="Menu Issue">Menu Issue</option>
+          <option value="Mess Issue">Mess Issue</option>
+          <option value="App Issue">App Issue</option>
+          <option value="Suggestion">Suggestion</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="hf-field">
+        <label for="hfQueryMessage">Message</label>
+        <textarea id="hfQueryMessage" class="hf-textarea" rows="4" placeholder="Tell us your query or suggestion..." required></textarea>
+      </div>
+      <button type="submit" class="primary" id="hfQuerySubmitBtn">Submit</button>
+    </form>
+    <div id="hfQuerySuccess" class="hf-query-status hidden">
+      Your suggestion has been submitted successfully.
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+</div>
+<script src="menu-data.js?v=5"></script>
+<script src="script.js?v=5"></script>
+</body>
+</html>
