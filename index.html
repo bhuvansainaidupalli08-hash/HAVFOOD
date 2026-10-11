@@ -7,72 +7,215 @@
 <meta name="description" content="HAVFOOD — VIT-AP Mess Menu">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon.svg">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=8">
 <title>HAVFOOD</title>
 </head>
 <body>
 <div id="app">
 <header class="topbar">
   <div class="brand">
-    <img src="icons/havfood-logo.png" alt="HAVFOOD logo" class="brand-icon">
-    <span class="brand-name"><span class="brand-hav">HAV</span><span class="brand-food">FOOD</span><span class="brand-dot" aria-hidden="true"></span></span>
+    <img src="icons/havfood-logo.png" alt="HAVFOOD" class="brand-logo">
+    <span id="adminBadge" class="admin-badge hidden">ADMIN</span>
   </div>
   <div class="topbar-actions">
+    <button id="profileBtn" class="profile-btn" aria-label="Profiles" title="Profile">👤</button>
     <button id="installBtn" class="icon-btn hidden" aria-label="Install HAVFOOD">＋</button>
     <button id="hfHamburger" class="hamburger-btn" aria-label="Open menu">☰</button>
   </div>
 </header>
 
-<main>
-<section class="hero">
-  <div>
-    <p class="eyebrow">VIT-AP MESS MENU</p>
-    <h1 id="heroDate">Today</h1>
-    <p id="heroSub">Your meals, without the search.</p>
+<!-- PWA Update Notification Banner -->
+<div id="pwaUpdateBanner" class="pwa-update-banner hidden">
+  <span>New HAVFOOD update available</span>
+  <button id="pwaUpdateRefreshBtn">Refresh to update</button>
+</div>
+
+<main id="mainContainer">
+  <!-- STUDENT PROFILE VIEW (Default) -->
+  <div id="studentView">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">VIT-AP MESS MENU</p>
+        <h1 id="heroDate">Today</h1>
+        <p id="heroSub">Your meals, without the search.</p>
+      </div>
+      <button id="calendarBtn" class="date-btn">📅 <span>Jump to date</span></button>
+    </section>
+
+    <!-- Meal-Wise Actor Greeting Card -->
+    <div id="hfActorCard" class="hf-actor-card hidden" aria-live="polite"></div>
+
+    <section class="status-card">
+      <div class="status-icon">🍽️</div>
+      <div class="status-copy">
+        <span id="statusLabel">SERVING NOW</span>
+        <b id="statusMeal">Loading…</b>
+        <small id="statusTime"></small>
+      </div>
+      <div class="countdown" id="countdown">--:--</div>
+    </section>
+
+    <section class="segmented" aria-label="Mess selection">
+      <button class="active" data-mess="Veg & Non-Veg">Veg & Non-Veg</button>
+      <button data-mess="Special">Special Mess</button>
+    </section>
+
+    <section id="messDetails" aria-label="Mess Details">
+      <div class="section-head"><h2>🍽️ Mess Details</h2><span class="muted">HAVFOOD</span></div>
+      <div class="details-grid">
+        <article class="detail-card">
+          <div class="detail-icon">🥗</div>
+          <div><b>Veg &amp; Non-Veg Mess</b><small>Regular mess menu available in the selector above.</small></div>
+        </article>
+        <article class="detail-card">
+          <div class="detail-icon">⭐</div>
+          <div><b>Special Mess</b><small>Special Mess menu can be selected above.</small></div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>7-Day Quick View</h2><button id="todayBtn" class="text-btn">Today</button></div>
+      <div id="week" class="week"></div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2 id="menuTitle">Menu</h2><span id="resultCount" class="muted"></span></div>
+      <div id="menu" class="menu-grid"></div>
+    </section>
   </div>
-  <button id="calendarBtn" class="date-btn">📅 <span>Jump to date</span></button>
-</section>
 
-<section class="status-card">
-  <div class="status-icon">🍽️</div>
-  <div class="status-copy">
-    <span id="statusLabel">SERVING NOW</span>
-    <b id="statusMeal">Loading…</b>
-    <small id="statusTime"></small>
-  </div>
-  <div class="countdown" id="countdown">--:--</div>
-</section>
+  <!-- ADMIN PROFILE VIEW (Shown upon login) -->
+  <section id="adminView" class="admin-view hidden" aria-label="Admin Profile Dashboard">
+    <div class="admin-header-card">
+      <div class="admin-header-copy">
+        <span class="eyebrow">ADMIN PROFILE</span>
+        <h1>Mess Incharge</h1>
+        <p class="heroSub">Manage monthly menus &amp; import official Excel sheets</p>
+      </div>
+      <div class="admin-header-actions">
+        <button id="adminBackToStudentBtn" class="secondary">👁️ View Student Menu</button>
+        <button id="adminLogoutBtn" class="danger-btn">Log Out</button>
+      </div>
+    </div>
 
-<section class="segmented" aria-label="Mess selection">
-  <button class="active" data-mess="Veg & Non-Veg">Veg & Non-Veg</button>
-  <button data-mess="Special">Special Mess</button>
-</section>
+    <!-- Insert New Menu Section -->
+    <div class="admin-card">
+      <div class="admin-card-head">
+        <div class="admin-icon-badge">📥</div>
+        <div>
+          <h2>Insert New Menu</h2>
+          <p class="muted">Upload future month's official Excel menu workbook</p>
+        </div>
+      </div>
 
-<section id="messDetails" aria-label="Mess Details">
-  <div class="section-head"><h2>🍽️ Mess Details</h2><span class="muted">HAVFOOD</span></div>
-  <div class="details-grid">
-    <article class="detail-card">
-      <div class="detail-icon">🥗</div>
-      <div><b>Veg &amp; Non-Veg Mess</b><small>Regular mess menu available in the selector above.</small></div>
-    </article>
-    <article class="detail-card">
-      <div class="detail-icon">⭐</div>
-      <div><b>Special Mess</b><small>Special Mess menu can be selected above.</small></div>
-    </article>
-  </div>
-</section>
+      <div class="admin-form-grid">
+        <div class="hf-field">
+          <label for="excelMonthInput">Select Month</label>
+          <input type="month" id="excelMonthInput" class="hf-select">
+        </div>
+        <div class="hf-field">
+          <label for="excelMessSelect">Target Mess Sheet</label>
+          <select id="excelMessSelect" class="hf-select">
+            <option value="auto">Auto-detect from workbook sheets</option>
+            <option value="Veg & Non-Veg">Veg &amp; Non-Veg Mess</option>
+            <option value="Special">Special Mess</option>
+          </select>
+        </div>
+      </div>
 
-<section>
-  <div class="section-head"><h2>7-Day Quick View</h2><button id="todayBtn" class="text-btn">Today</button></div>
-  <div id="week" class="week"></div>
-</section>
+      <div class="excel-upload-zone">
+        <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="file-input-hidden">
+        <label for="excelFileInput" class="file-drop-box" id="excelDropLabel">
+          <span class="drop-icon">📊</span>
+          <span class="drop-title" id="excelDropTitle">Choose or drop Excel file (.xlsx, .xls)</span>
+          <span class="drop-sub" id="excelDropSub">Supports official VIT-AP mess menu spreadsheets</span>
+        </label>
+      </div>
 
-<section>
-  <div class="section-head"><h2 id="menuTitle">Menu</h2><span id="resultCount" class="muted"></span></div>
-  <div id="menu" class="menu-grid"></div>
-</section>
+      <!-- Validation Result Container -->
+      <div id="excelValidationBox" class="validation-box hidden"></div>
+
+      <!-- Preview Table Container -->
+      <div id="excelPreviewContainer" class="preview-container hidden">
+        <div class="preview-head">
+          <b>Parsed Menu Preview</b>
+          <span id="previewStats" class="muted"></span>
+        </div>
+        <div id="excelPreviewTable" class="preview-table-wrap"></div>
+      </div>
+
+      <div class="admin-actions">
+        <button id="btnDownloadMenuJs" class="primary export-btn" disabled>📥 Export &amp; Download Updated menu-data.js</button>
+        <div class="admin-secondary-actions">
+          <button id="btnCopyMenuJs" class="secondary" disabled>📋 Copy menu-data.js Code</button>
+          <button id="btnSaveLocal" class="secondary" disabled>💾 Save &amp; Preview on This Device</button>
+        </div>
+      </div>
+
+      <!-- Step-by-Step GitHub + Netlify Deployment Guide -->
+      <div id="githubPublishGuide" class="publish-guide-card hidden">
+        <div class="publish-guide-head">
+          <span class="guide-badge">₹0 SHARED MENU WORKFLOW</span>
+          <h3>How to Publish to All Students (Netlify)</h3>
+        </div>
+        <p class="guide-intro">Follow these steps to deploy the updated menu to every student at ₹0 cost:</p>
+        <div class="step-card">
+          <span class="step-num">1</span>
+          <div class="step-text">
+            <b>Download <code>menu-data.js</code></b>
+            <p>Click the "Export &amp; Download" button above to save the complete, validated menu file.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <span class="step-num">2</span>
+          <div class="step-text">
+            <b>Replace in Project</b>
+            <p>Place the downloaded file into <code>HAVFOOD_FINAL_ONE_AND_DONE/menu-data.js</code> in your local repository.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <span class="step-num">3</span>
+          <div class="step-text">
+            <b>Commit &amp; Push to GitHub</b>
+            <p>Run these commands in your terminal:</p>
+            <pre class="terminal-box" id="gitCmdSnippet"><code>git add menu-data.js
+git commit -m "Update menu: Add new month menu"
+git push origin main</code></pre>
+          </div>
+        </div>
+        <div class="step-card">
+          <span class="step-num">4</span>
+          <div class="step-text">
+            <b>Netlify Automatic Deployment (₹0)</b>
+            <p>Netlify detects the GitHub push and deploys the updated app in ~30 seconds. Next time students open HAVFOOD, the new month will be available in "Change Month".</p>
+          </div>
+        </div>
+        <p class="guide-note"><b>Publishing Status:</b> <span id="publishStatusText" class="status-pill pending">Awaiting Excel Validation</span></p>
+      </div>
+    </div>
+
+    <!-- Available Months Management -->
+    <div class="admin-card">
+      <div class="admin-card-head">
+        <div class="admin-icon-badge">📅</div>
+        <div>
+          <h2>Available Monthly Menus</h2>
+          <p class="muted">Months currently stored and accessible in HAVFOOD</p>
+        </div>
+      </div>
+      <div id="adminMonthsList" class="stored-months-list"></div>
+    </div>
+
+    <!-- Zero-Cost Shared Architecture Notice -->
+    <div class="admin-info-banner">
+      <b>₹0 Shared Menu Architecture (GitHub + Netlify)</b>
+      <p>HAVFOOD operates on a ₹0 static PWA architecture. Official Excel menus are parsed client-side, validated, and exported into <code>menu-data.js</code>. Committing this file to GitHub triggers Netlify's automatic CDN deployment. All students receive the updated menu on their devices with zero cloud database costs.</p>
+    </div>
+  </section>
 </main>
 
+<!-- Date Selection Modal -->
 <div id="dateModal" class="modal hidden">
  <div class="modal-card">
   <div class="modal-head"><h3>Choose a date</h3><button data-close="dateModal" aria-label="Close">×</button></div>
@@ -81,14 +224,88 @@
  </div>
 </div>
 
+<!-- Enhanced Meal Reminders Modal -->
 <div id="reminderModal" class="modal hidden">
  <div class="modal-card">
   <div class="modal-head"><h3>Meal reminders</h3><button data-close="reminderModal" aria-label="Close">×</button></div>
-  <p class="modal-note">Choose how early you want HAVFOOD to remind you.</p>
+  <div id="notifPermStatus" class="perm-badge default">🔔 Checking notification permission…</div>
+  <p class="modal-note">Configure automatic reminders for campus dining.</p>
+
+  <div class="reminder-section-title">Meals to Remind</div>
+  <div class="meal-chips" id="reminderMealChips">
+    <button type="button" class="meal-chip active" data-meal="Breakfast">Breakfast</button>
+    <button type="button" class="meal-chip active" data-meal="Lunch">Lunch</button>
+    <button type="button" class="meal-chip active" data-meal="Snacks">Snacks</button>
+    <button type="button" class="meal-chip active" data-meal="Dinner">Dinner</button>
+  </div>
+
+  <div class="reminder-section-title">Meal Start Reminder <span class="badge-mini">Before Start</span></div>
   <div id="reminderOptions" class="reminder-options"></div>
-  <label class="switch-row"><span>Enable reminders</span><input id="reminderToggle" type="checkbox"><i></i></label>
-  <p class="tiny">Notifications require browser permission. For guaranteed background push, a push service/backend is needed.</p>
+
+  <div class="reminder-section-title">Meal End Reminder <span class="badge-mini">Before End</span></div>
+  <div id="mealEndOptions" class="end-reminder-options"></div>
+
+  <label class="switch-row"><span>Enable meal-start reminders</span><input id="reminderToggle" type="checkbox"><i></i></label>
+  <label class="switch-row" style="margin-top:10px;"><span>Enable meal-end reminders</span><input id="mealEndToggle" type="checkbox"><i></i></label>
+
+  <button id="testNotifBtn" class="secondary-btn" type="button">🔔 Send Test Notification</button>
+  <p class="tiny" id="reminderHint">Notifications trigger based on campus dining timings. Browser permission required.</p>
  </div>
+</div>
+
+<!-- Profile Switcher Modal -->
+<div id="profileModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>HAVFOOD Profiles</h3>
+      <button data-close="profileModal" aria-label="Close">×</button>
+    </div>
+    <div class="profile-current-badge">
+      <span class="muted">Active Profile</span>
+      <b id="activeProfileName">Student Profile</b>
+    </div>
+    <div class="profile-options-list">
+      <div class="profile-item active" id="optStudentProfile">
+        <div class="profile-item-icon">🎓</div>
+        <div class="profile-item-copy">
+          <b>Student Profile</b>
+          <small>Mess menu, dining timings &amp; meal reminders</small>
+        </div>
+        <span id="studentActiveMark" class="profile-active-tag">Active</span>
+      </div>
+      <div class="profile-item" id="optAdminProfile">
+        <div class="profile-item-icon">🛡️</div>
+        <div class="profile-item-copy">
+          <b>Admin Profile</b>
+          <small>Mess incharge &amp; Excel menu importer</small>
+        </div>
+        <button id="btnProfileAdminAction" class="secondary-btn-compact">Log In</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Login Modal -->
+<div id="adminLoginModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Admin Login</h3>
+      <button data-close="adminLoginModal" aria-label="Close">×</button>
+    </div>
+    <p class="modal-note">Sign in with your Mess Incharge credentials to manage monthly menus.</p>
+    <form id="adminLoginForm">
+      <div class="hf-field">
+        <label for="adminUser">Username</label>
+        <input type="text" id="adminUser" class="hf-select" required autocomplete="username" placeholder="mess_incharge">
+      </div>
+      <div class="hf-field">
+        <label for="adminPass">Password</label>
+        <input type="password" id="adminPass" class="hf-select" required autocomplete="current-password" placeholder="••••••••••••">
+      </div>
+      <div id="adminLoginErr" class="form-err hidden"></div>
+      <button type="submit" class="primary" id="adminLoginSubmitBtn">Log In</button>
+    </form>
+  </div>
 </div>
 
 <!-- Hamburger Menu Drawer -->
@@ -163,7 +380,8 @@
 
 <div id="toast" class="toast"></div>
 </div>
-<script src="menu-data.js?v=5"></script>
-<script src="script.js?v=5"></script>
+<script src="actor.js?v=8"></script>
+<script src="menu-data.js?v=8"></script>
+<script src="script.js?v=8"></script>
 </body>
 </html>

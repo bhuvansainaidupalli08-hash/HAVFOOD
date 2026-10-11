@@ -1,11 +1,11 @@
-const CACHE = "havfood-pro-v6";
-
+const CACHE = "havfood-pro-v8";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=6",
-  "./script.js?v=6",
-  "./menu-data.js?v=6",
+  "./style.css?v=8",
+  "./script.js?v=8",
+  "./actor.js?v=8",
+  "./menu-data.js?v=8",
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",
@@ -13,40 +13,90 @@ const ASSETS = [
   "./icons/havfood-logo.png"
 ];
 
-self.addEventListener("install", event => {
-  event.waitUntil(
+self.addEventListener("install", e => {
+  e.waitUntil(
     caches.open(CACHE)
-      .then(cache => cache.addAll(ASSETS))
+      .then(c => c.addAll(ASSETS))
       .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys =>
-        Promise.all(
-          keys
-            .filter(key => key !== CACHE)
-            .map(key => caches.delete(key))
-        )
-      )
-      .then(() => self.clients.claim())
+self.addEventListener("activate", e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        const copy = response.clone();
+self.addEventListener("message", e => {
+  if (e.data === "skipWaiting") {
+    self.skipWaiting();
+  }
+});
 
-        caches.open(CACHE).then(cache => {
-          cache.put(event.request, copy);
-        });
+self.addEventListener("fetch", e => {
+  // Only process GET requests; POST/PUT/DELETE bypass cache
+  if (e.request.method !== "GET") return;
 
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+  // API calls are Network-First to guarantee latest shared database menus
+  if (e.request.url.includes("/api/")) {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Static assets: Cache-First with fallback
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (res && res.status === 200 && (e.request.url.startsWith("http://") || e.request.url.startsWith("https://"))) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
+        return res;
+      }).catch(() => caches.match("./index.html"));
+    })
+  );
+});
+
+// Web Push event handler: receives notifications while app/browser is closed
+self.addEventListener("push", e => {
+  let data = {};
+  try {
+    data = e.data ? e.data.json() : {};
+  } catch (_) {
+    data = { body: e.data ? e.data.text() : "HAVFOOD meal reminder" };
+  }
+
+  const title = data.title || "HAVFOOD Reminder";
+  const options = {
+    body: data.body || "It's time for your campus dining meal!",
+    icon: data.icon || "icons/icon-192.png",
+    badge: data.badge || "icons/icon.svg",
+    tag: data.tag || "havfood-alert",
+    renotify: Boolean(data.renotify),
+    data: data.data || { url: "./" }
+  };
+
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const targetUrl = (e.notification.data && e.notification.data.url) || "./";
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if ("focus" in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
   );
 });
