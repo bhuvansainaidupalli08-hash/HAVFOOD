@@ -1,10 +1,10 @@
-const CACHE = "havfood-pro-v10";
+const CACHE = "havfood-pro-v11";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=10",
-  "./script.js?v=10",
-  "./actor.js?v=10",
+  "./style.css?v=11",
+  "./script.js?v=11",
+  "./actor.js?v=11",
   "./menu-data.js?v=8",
   "./manifest.json",
   "./icons/icon.svg",
