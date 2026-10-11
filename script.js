@@ -216,7 +216,7 @@
     $("statusTime").textContent = s.time || (isToday(selectedDate) ? "All meals" : "Full day menu");
     $("countdown").textContent = s.remaining == null ? "" : clock(s.remaining);
 
-    // Meal-Wise Actor Card (Shah Rukh Khan, Allu Arjun, Mammootty, Dr. G. Viswanathan)
+    // Meal-Wise Actor Card (Shah Rukh Khan, Allu Arjun, Mammootty, Brahmanandam)
     if (window.HAVFOOD_ACTOR && typeof window.HAVFOOD_ACTOR.render === "function") {
       window.HAVFOOD_ACTOR.render();
     }

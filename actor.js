@@ -19,6 +19,7 @@
       tagline: "Breakfast with King Khan",
       greeting: "Good morning! Start your day with great food and high spirits.",
       hadMealQuery: "Had your meal? Don't underestimate the power of a nutritious breakfast!",
+      stickerImg: "assets/actors/shah_rukh_khan.png",
       avatarBg: "linear-gradient(135deg, #ff7a45, #ff4d4f)",
       badgeIcon: "👑",
       accentColor: "#ef6c3d"
@@ -29,6 +30,7 @@
       tagline: "Afternoon Boost with Bunny",
       greeting: "Lunch time! Refuel your body and conquer the rest of your day.",
       hadMealQuery: "Had your meal? 'Taggedhe Le' — grab your lunch on time!",
+      stickerImg: "assets/actors/allu_arjun.png",
       avatarBg: "linear-gradient(135deg, #10b981, #059669)",
       badgeIcon: "🔥",
       accentColor: "#10b981"
@@ -39,18 +41,20 @@
       tagline: "Evening Chai with Mammookka",
       greeting: "Chai and snack break! Take a deep breath and unwind.",
       hadMealQuery: "Had your meal? A warm snack keeps your energy sharp and focused.",
+      stickerImg: "assets/actors/mammootty.png",
       avatarBg: "linear-gradient(135deg, #8b5cf6, #6366f1)",
       badgeIcon: "⭐",
       accentColor: "#8b5cf6"
     },
     Dinner: {
-      name: "Dr. G. Viswanathan",
-      title: "VIT Founder & Chancellor",
-      tagline: "Evening Wisdom with Chancellor Sir",
+      name: "Brahmanandam",
+      title: "King of Comedy",
+      tagline: "Dinner Time with Brahmanandam",
       greeting: "Good evening! A wholesome dinner nourishes tomorrow's excellence.",
       hadMealQuery: "Had your meal? Take good care of your health — success naturally follows.",
+      stickerImg: "assets/actors/brahmanandam.png",
       avatarBg: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-      badgeIcon: "🎓",
+      badgeIcon: "🌟",
       accentColor: "#2563eb"
     }
   };
@@ -149,22 +153,47 @@
 
     container.className = "hf-actor-card";
     container.innerHTML = `
-      <div class="hf-actor-inner">
-        <div class="hf-actor-avatar-wrap" style="background:${state.actor.avatarBg};" aria-hidden="true">
-          <span class="hf-actor-avatar-icon">${state.actor.badgeIcon}</span>
-          <span class="hf-actor-initials">${initials}</span>
+      <div class="hf-actor-header">
+        <div class="hf-actor-meta">
+          <span class="hf-actor-badge ${state.isFirst30Mins ? "hf-badge-alert" : ""}">
+            ${state.statusBadgeText}
+          </span>
+          <span class="hf-actor-name">${state.actor.name} <small class="hf-actor-role">(${state.actor.title})</small></span>
         </div>
-        <div class="hf-actor-content">
-          <div class="hf-actor-header">
-            <div class="hf-actor-meta">
-              <span class="hf-actor-badge ${state.isFirst30Mins ? "hf-badge-alert" : ""}">
-                ${state.statusBadgeText}
-              </span>
-              <span class="hf-actor-name">${state.actor.name} <small class="hf-actor-role">(${state.actor.title})</small></span>
-            </div>
-            <button class="hf-actor-close-btn" id="hfActorCloseBtn" aria-label="Dismiss greeting for this session">✕</button>
+        <button class="hf-actor-close-btn" id="hfActorCloseBtn" aria-label="Dismiss character greeting for this session">✕</button>
+      </div>
+
+      <div class="hf-actor-stage">
+        <!-- Cloud-shaped Thought Bubble -->
+        <div class="hf-thought-bubble-container">
+          <div class="hf-thought-cloud ${state.isFirst30Mins ? "hf-thought-alert" : ""}" role="region" aria-label="Actor thought message">
+            <p class="hf-thought-text">${state.messageText}</p>
+            <div class="hf-thought-puff hf-puff-1" aria-hidden="true"></div>
+            <div class="hf-thought-puff hf-puff-2" aria-hidden="true"></div>
+            <div class="hf-thought-puff hf-puff-3" aria-hidden="true"></div>
           </div>
-          <p class="hf-actor-quote ${state.isFirst30Mins ? "hf-quote-highlight" : ""}">${state.messageText}</p>
+          <div class="hf-thought-trail" aria-hidden="true">
+            <span class="hf-thought-dot hf-dot-lg"></span>
+            <span class="hf-thought-dot hf-dot-md"></span>
+            <span class="hf-thought-dot hf-dot-sm"></span>
+          </div>
+        </div>
+
+        <!-- Realistic Full-Body PNG Character Sticker -->
+        <div class="hf-actor-sticker-wrap">
+          <img
+            src="${state.actor.stickerImg}"
+            alt="${state.actor.name} full-body sticker"
+            class="hf-actor-sticker-img"
+            loading="lazy"
+            decoding="async"
+            onerror="this.style.display='none'; var fb=document.getElementById('hfActorFallbackAvatar'); if(fb) fb.style.display='flex';"
+          />
+          <!-- Graceful Fallback Avatar (shown only if image fails to load) -->
+          <div id="hfActorFallbackAvatar" class="hf-actor-avatar-wrap hf-actor-fallback" style="background:${state.actor.avatarBg}; display:none;" aria-hidden="true">
+            <span class="hf-actor-avatar-icon">${state.actor.badgeIcon}</span>
+            <span class="hf-actor-initials">${initials}</span>
+          </div>
         </div>
       </div>
     `;
@@ -179,6 +208,13 @@
         container.classList.add("hidden");
       };
     }
+  }
+
+  // Auto-render on DOM ready to avoid blocking app initialization
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", renderActorCard);
+  } else {
+    renderActorCard();
   }
 
   // Export to window for HAVFOOD core integration

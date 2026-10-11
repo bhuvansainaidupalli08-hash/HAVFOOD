@@ -1,16 +1,20 @@
-const CACHE = "havfood-pro-v8";
+const CACHE = "havfood-pro-v10";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=8",
-  "./script.js?v=8",
-  "./actor.js?v=8",
+  "./style.css?v=10",
+  "./script.js?v=10",
+  "./actor.js?v=10",
   "./menu-data.js?v=8",
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
-  "./icons/havfood-logo.png"
+  "./icons/havfood-logo.png",
+  "./assets/actors/shah_rukh_khan.png",
+  "./assets/actors/allu_arjun.png",
+  "./assets/actors/mammootty.png",
+  "./assets/actors/brahmanandam.png"
 ];
 
 self.addEventListener("install", e => {
