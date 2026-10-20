@@ -216,7 +216,7 @@
     $("statusTime").textContent = s.time || (isToday(selectedDate) ? "All meals" : "Full day menu");
     $("countdown").textContent = s.remaining == null ? "" : clock(s.remaining);
 
-    // Meal-Wise Actor Card (Shah Rukh Khan, Allu Arjun, Mammootty, Brahmanandam)
+    // Meal-Wise Actor Card (Shah Rukh Khan, Allu Arjun, Mammootty, Bramhanandham)
     if (window.HAVFOOD_ACTOR && typeof window.HAVFOOD_ACTOR.render === "function") {
       window.HAVFOOD_ACTOR.render();
     }
@@ -1323,24 +1323,53 @@
   });
 
   // ============================================================================
-  // PWA SERVICE WORKER & CLEAN UPDATE NOTIFICATION
-  // Prompts user: "New HAVFOOD update available — Refresh to update"
+  // PWA SERVICE WORKER & RELIABLE MOBILE UPDATE LIFECYCLE
+  // Active update checks, visibility change refresh, and safe single reload
   // ============================================================================
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").then(reg => {
+        // 1. Actively request an update check from the network on startup
+        reg.update().catch(() => {});
+
+        // 2. Check for updates whenever the mobile PWA is resumed from background
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") {
+            reg.update().catch(() => {});
+          }
+        });
+
+        // 3. Periodic background check every 30 minutes while app remains open
+        setInterval(() => {
+          reg.update().catch(() => {});
+        }, 30 * 60 * 1000);
+
+        // Helper to prompt user when an updated worker is available
+        const showUpdateBanner = () => {
+          const banner = $("pwaUpdateBanner");
+          if (banner) banner.classList.remove("hidden");
+        };
+
+        // If a worker is already waiting in background, display banner immediately
+        if (reg.waiting && navigator.serviceWorker.controller) {
+          showUpdateBanner();
+        }
+
+        // Listen for new worker installs
         reg.addEventListener("updatefound", () => {
           const newWorker = reg.installing;
           if (!newWorker) return;
           newWorker.addEventListener("statechange", () => {
             if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              const banner = $("pwaUpdateBanner");
-              if (banner) banner.classList.remove("hidden");
+              showUpdateBanner();
             }
           });
         });
-      }).catch(() => {});
+      }).catch(err => {
+        console.warn("[PWA] Service Worker registration failed:", err);
+      });
 
+      // Safe, single-reload controller change handler (prevents reload loops)
       let refreshing = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (!refreshing) {

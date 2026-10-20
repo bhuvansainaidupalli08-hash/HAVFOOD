@@ -1,10 +1,10 @@
-const CACHE = "havfood-pro-v11";
+const CACHE = "havfood-pro-v12";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=11",
-  "./script.js?v=11",
-  "./actor.js?v=11",
+  "./style.css?v=12",
+  "./script.js?v=12",
+  "./actor.js?v=12",
   "./menu-data.js?v=8",
   "./manifest.json",
   "./icons/icon.svg",
@@ -17,41 +17,93 @@ const ASSETS = [
   "./assets/actors/brahmanandam.png"
 ];
 
+// Install: Cache critical core shell assets and skip waiting safely
 self.addEventListener("install", e => {
   e.waitUntil(
     caches.open(CACHE)
       .then(c => c.addAll(ASSETS))
       .then(() => self.skipWaiting())
+      .catch(err => {
+        console.warn("[SW] Cache addAll warning:", err);
+        return self.skipWaiting();
+      })
   );
 });
 
+// Activate: Clean up only obsolete HAVFOOD caches, claim clients immediately
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(
+        keys.map(k => {
+          if (k.startsWith("havfood-") && k !== CACHE) {
+            return caches.delete(k);
+          }
+        })
+      )
     ).then(() => self.clients.claim())
   );
 });
 
+// Message listener for skipWaiting trigger from update banner
 self.addEventListener("message", e => {
   if (e.data === "skipWaiting") {
     self.skipWaiting();
   }
 });
 
+// Fetch event handler
 self.addEventListener("fetch", e => {
   // Only process GET requests; POST/PUT/DELETE bypass cache
   if (e.request.method !== "GET") return;
 
-  // API calls are Network-First to guarantee latest shared database menus
-  if (e.request.url.includes("/api/")) {
+  const url = new URL(e.request.url);
+
+  // 1. API calls (Render / Supabase): Network-First with Cache Fallback
+  if (url.pathname.includes("/api/")) {
     e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
+      fetch(e.request).then(res => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
+        return res;
+      }).catch(() => caches.match(e.request))
     );
     return;
   }
 
-  // Static assets: Cache-First with fallback
+  // 2. Navigation / HTML Document requests: Network-First with Cache Fallback
+  // Guarantees installed mobile PWAs fetch the newest HTML version when online,
+  // preventing the app from being stuck on an old cached HTML file.
+  const isNavigation = e.request.mode === "navigate" || 
+                       (e.request.headers.get("accept") && e.request.headers.get("accept").includes("text/html"));
+
+  if (isNavigation) {
+    e.respondWith(
+      fetch(e.request).then(networkRes => {
+        if (networkRes && networkRes.status === 200) {
+          const copy = networkRes.clone();
+          caches.open(CACHE).then(c => {
+            c.put(e.request, copy);
+            c.put("./index.html", copy.clone());
+            c.put("./", copy.clone());
+          });
+        }
+        return networkRes;
+      }).catch(async () => {
+        const cached = await caches.match(e.request);
+        if (cached) return cached;
+        const indexCached = await caches.match("./index.html");
+        if (indexCached) return indexCached;
+        return caches.match("./");
+      })
+    );
+    return;
+  }
+
+  // 3. Versioned Static Assets (CSS, JS, images, icons, actor stickers):
+  // Cache-First with Network fallback and automatic cache populate
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -61,7 +113,11 @@ self.addEventListener("fetch", e => {
           caches.open(CACHE).then(c => c.put(e.request, copy));
         }
         return res;
-      }).catch(() => caches.match("./index.html"));
+      }).catch(() => {
+        if (e.request.destination === "image") {
+          return caches.match("./icons/icon-192.png");
+        }
+      });
     })
   );
 });
