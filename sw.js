@@ -1,15 +1,18 @@
-const CACHE = "havfood-pro-v12";
+const CACHE = "havfood-pro-v13";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=12",
-  "./script.js?v=12",
-  "./actor.js?v=12",
+  "./style.css?v=13",
+  "./script.js?v=13",
+  "./actor.js?v=13",
   "./menu-data.js?v=8",
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./icons/apple-touch-icon.png",
+  "./icons/icon-maskable-192.png",
+  "./icons/icon-maskable-512.png",
   "./icons/havfood-logo.png",
   "./assets/actors/shah_rukh_khan.png",
   "./assets/actors/allu_arjun.png",
