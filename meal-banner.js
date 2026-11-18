@@ -2,6 +2,7 @@
  * DINELY — Meal Banner Module
  * Clean, food-focused meal greeting. No actors or celebrities.
  * Shows a motivational food message relevant to the current meal period.
+ * Styled with approved DINELY brand palette: Forest Green, Lime, Cream, Peach, Dark.
  */
 
 ((window) => {
@@ -17,8 +18,10 @@
         "Morning energy comes from a wholesome breakfast. Dig in!"
       ],
       hadMealQuery: "Had breakfast yet? Don't skip it — your brain needs fuel!",
-      accentColor: "#f59e0b",
-      gradientBg: "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))"
+      accentColor: "#D8F36A", // Lime
+      badgeColor: "#D8F36A",
+      gradientBg: "linear-gradient(135deg, #123C32 0%, #1a4f42 100%)",
+      textColor: "#F8F8F2"
     },
     Lunch: {
       emoji: "☀️",
@@ -29,8 +32,10 @@
         "Lunch is your midday reset. Eat well, perform better."
       ],
       hadMealQuery: "Had lunch yet? Head to the mess — your meal is ready!",
-      accentColor: "#10b981",
-      gradientBg: "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.04))"
+      accentColor: "#D8F36A", // Lime
+      badgeColor: "#D8F36A",
+      gradientBg: "linear-gradient(135deg, #123C32 0%, #16463a 100%)",
+      textColor: "#F8F8F2"
     },
     Snacks: {
       emoji: "☕",
@@ -41,8 +46,10 @@
         "Chai time! Step away, relax, and snack well."
       ],
       hadMealQuery: "Evening snacks are on! A quick bite goes a long way.",
-      accentColor: "#8b5cf6",
-      gradientBg: "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(139,92,246,0.04))"
+      accentColor: "#E8A66A", // Peach
+      badgeColor: "#E8A66A",
+      gradientBg: "linear-gradient(135deg, #123C32 0%, #1d463b 100%)",
+      textColor: "#F8F8F2"
     },
     Dinner: {
       emoji: "🌙",
@@ -53,8 +60,10 @@
         "Wrap up the day with a great meal. Dining well matters."
       ],
       hadMealQuery: "Dinner is being served! Don't miss your evening meal.",
-      accentColor: "#2563eb",
-      gradientBg: "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(37,99,235,0.04))"
+      accentColor: "#D8F36A", // Lime
+      badgeColor: "#D8F36A",
+      gradientBg: "linear-gradient(135deg, #123C32 0%, #0e2f27 100%)",
+      textColor: "#F8F8F2"
     }
   };
 
@@ -152,20 +161,21 @@
 
     container.className = "dn-meal-banner";
     container.style.background = state.info.gradientBg;
-    container.style.borderColor = state.info.accentColor + "40";
+    container.style.border = "1px solid rgba(18, 60, 50, 0.2)";
+    container.style.color = state.info.textColor;
 
     container.innerHTML = `
       <div class="dn-banner-inner">
         <div class="dn-banner-left">
           <span class="dn-meal-emoji" aria-hidden="true">${state.info.emoji}</span>
           <div class="dn-banner-text">
-            <span class="dn-banner-badge ${state.isFirst30Mins ? "dn-badge-alert" : ""}" style="color:${state.info.accentColor}">
+            <span class="dn-banner-badge ${state.isFirst30Mins ? "dn-badge-alert" : ""}" style="color:${state.info.badgeColor}; font-weight:800; letter-spacing:0.8px;">
               ${state.statusBadge}
             </span>
-            <p class="dn-banner-msg">${state.messageText}</p>
+            <p class="dn-banner-msg" style="color:#F8F8F2;">${state.messageText}</p>
           </div>
         </div>
-        <button class="dn-banner-close" id="dnBannerCloseBtn" aria-label="Dismiss">✕</button>
+        <button class="dn-banner-close" id="dnBannerCloseBtn" aria-label="Dismiss" style="color:rgba(248,248,242,0.7); border-color:rgba(248,248,242,0.25);">✕</button>
       </div>
     `;
 

@@ -1,12 +1,12 @@
 {
-  "name": "DINELY",
+  "name": "DINELY – Your Campus. Your Meals.",
   "short_name": "DINELY",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#121414",
-  "theme_color": "#121414",
-  "description": "DINELY — Your Campus. Your Meals.",
+  "background_color": "#F8F8F2",
+  "theme_color": "#123C32",
+  "description": "DINELY — Your Campus. Your Meals. A smarter way to dine.",
   "icons": [
     {
       "src": "icons/icon-192.png",

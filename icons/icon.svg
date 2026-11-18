@@ -1,13 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Background circle -->
-  <circle cx="50" cy="50" r="50" fill="#121414"/>
-  <!-- D shape (outer arc) -->
-  <path d="M28 20 L28 80 Q28 80 42 80 Q72 80 72 50 Q72 20 42 20 Z" fill="none" stroke="#00F5A0" stroke-width="6" stroke-linejoin="round"/>
-  <!-- Inner cutout to make it a D ring -->
-  <path d="M38 32 L38 68 Q38 68 44 68 Q60 68 60 50 Q60 32 44 32 Z" fill="#121414"/>
-  <!-- Fork tines inside D -->
-  <line x1="46" y1="38" x2="46" y2="52" stroke="#00F5A0" stroke-width="2.5" stroke-linecap="round"/>
-  <line x1="51" y1="38" x2="51" y2="52" stroke="#00F5A0" stroke-width="2.5" stroke-linecap="round"/>
-  <!-- Fork handle -->
-  <line x1="48.5" y1="52" x2="48.5" y2="62" stroke="#00F5A0" stroke-width="2.5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <clipPath id="dCutout">
+      <path d="M 45 28 A 22 22 0 0 1 45 72 Z"/>
+    </clipPath>
+  </defs>
+  <!-- Background rounded squircle in Forest Green -->
+  <rect width="100" height="100" rx="22" fill="#123C32"/>
+  
+  <!-- Outer D curve (Plate ring) in Lime -->
+  <path d="M 40 20 L 40 80 A 30 30 0 0 0 40 20 Z" fill="#D8F36A"/>
+  
+  <!-- Inner cutout of D in Forest Green -->
+  <path d="M 40 28 L 40 72 A 22 22 0 0 0 40 28 Z" fill="#123C32"/>
+  
+  <!-- Vertical stem of D in Cream -->
+  <rect x="22" y="20" width="14" height="60" rx="7" fill="#F8F8F2"/>
+  
+  <!-- Fork handle in Cream -->
+  <rect x="52" y="48" width="5" height="18" rx="2.5" fill="#F8F8F2"/>
+  
+  <!-- Fork shoulder in Cream -->
+  <rect x="46" y="44" width="17" height="5" rx="2.5" fill="#F8F8F2"/>
+  
+  <!-- Fork tines -->
+  <rect x="47" y="32" width="3.5" height="13" rx="1.75" fill="#F8F8F2"/>
+  <rect x="52.75" y="30" width="3.5" height="15" rx="1.75" fill="#D8F36A"/>
+  <rect x="58.5" y="32" width="3.5" height="13" rx="1.75" fill="#F8F8F2"/>
 </svg>

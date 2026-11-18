@@ -1,10 +1,10 @@
-const CACHE = "dinely-pwa-v1";
+const CACHE = "dinely-pwa-v2";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=14",
-  "./script.js?v=14",
-  "./meal-banner.js?v=14",
+  "./style.css?v=15",
+  "./script.js?v=15",
+  "./meal-banner.js?v=15",
   "./menu-data.js?v=8",
   "./manifest.json",
   "./icons/icon.svg",
