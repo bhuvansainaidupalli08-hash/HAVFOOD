@@ -1,10 +1,10 @@
-const CACHE = "havfood-pro-v13";
+const CACHE = "dinely-pwa-v1";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=13",
-  "./script.js?v=13",
-  "./actor.js?v=13",
+  "./style.css?v=14",
+  "./script.js?v=14",
+  "./meal-banner.js?v=14",
   "./menu-data.js?v=8",
   "./manifest.json",
   "./icons/icon.svg",
@@ -12,12 +12,7 @@ const ASSETS = [
   "./icons/icon-512.png",
   "./icons/apple-touch-icon.png",
   "./icons/icon-maskable-192.png",
-  "./icons/icon-maskable-512.png",
-  "./icons/havfood-logo.png",
-  "./assets/actors/shah_rukh_khan.png",
-  "./assets/actors/allu_arjun.png",
-  "./assets/actors/mammootty.png",
-  "./assets/actors/brahmanandam.png"
+  "./icons/icon-maskable-512.png"
 ];
 
 // Install: Cache critical core shell assets and skip waiting safely
@@ -33,13 +28,13 @@ self.addEventListener("install", e => {
   );
 });
 
-// Activate: Clean up only obsolete HAVFOOD caches, claim clients immediately
+// Activate: Clean up only obsolete caches, claim clients immediately
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
         keys.map(k => {
-          if (k.startsWith("havfood-") && k !== CACHE) {
+          if ((k.startsWith("havfood-") || k.startsWith("dinely-")) && k !== CACHE) {
             return caches.delete(k);
           }
         })
@@ -57,12 +52,11 @@ self.addEventListener("message", e => {
 
 // Fetch event handler
 self.addEventListener("fetch", e => {
-  // Only process GET requests; POST/PUT/DELETE bypass cache
   if (e.request.method !== "GET") return;
 
   const url = new URL(e.request.url);
 
-  // 1. API calls (Render / Supabase): Network-First with Cache Fallback
+  // 1. API calls: Network-First with Cache Fallback
   if (url.pathname.includes("/api/")) {
     e.respondWith(
       fetch(e.request).then(res => {
@@ -77,9 +71,7 @@ self.addEventListener("fetch", e => {
   }
 
   // 2. Navigation / HTML Document requests: Network-First with Cache Fallback
-  // Guarantees installed mobile PWAs fetch the newest HTML version when online,
-  // preventing the app from being stuck on an old cached HTML file.
-  const isNavigation = e.request.mode === "navigate" || 
+  const isNavigation = e.request.mode === "navigate" ||
                        (e.request.headers.get("accept") && e.request.headers.get("accept").includes("text/html"));
 
   if (isNavigation) {
@@ -105,8 +97,7 @@ self.addEventListener("fetch", e => {
     return;
   }
 
-  // 3. Versioned Static Assets (CSS, JS, images, icons, actor stickers):
-  // Cache-First with Network fallback and automatic cache populate
+  // 3. Versioned Static Assets: Cache-First with Network fallback
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -125,21 +116,21 @@ self.addEventListener("fetch", e => {
   );
 });
 
-// Web Push event handler: receives notifications while app/browser is closed
+// Web Push event handler
 self.addEventListener("push", e => {
   let data = {};
   try {
     data = e.data ? e.data.json() : {};
   } catch (_) {
-    data = { body: e.data ? e.data.text() : "HAVFOOD meal reminder" };
+    data = { body: e.data ? e.data.text() : "DINELY meal reminder" };
   }
 
-  const title = data.title || "HAVFOOD Reminder";
+  const title = data.title || "DINELY Reminder";
   const options = {
     body: data.body || "It's time for your campus dining meal!",
     icon: data.icon || "icons/icon-192.png",
     badge: data.badge || "icons/icon.svg",
-    tag: data.tag || "havfood-alert",
+    tag: data.tag || "dinely-alert",
     renotify: Boolean(data.renotify),
     data: data.data || { url: "./" }
   };

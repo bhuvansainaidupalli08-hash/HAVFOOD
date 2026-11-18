@@ -1,12 +1,12 @@
 {
-  "name": "HAVFOOD",
-  "short_name": "HAVFOOD",
+  "name": "DINELY",
+  "short_name": "DINELY",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#121414",
   "theme_color": "#121414",
-  "description": "HAVFOOD — VIT-AP Mess Menu",
+  "description": "DINELY — Your Campus. Your Meals.",
   "icons": [
     {
       "src": "icons/icon-192.png",

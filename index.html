@@ -4,31 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#121414">
-<meta name="description" content="HAVFOOD — VIT-AP Mess Menu">
+<meta name="description" content="DINELY — Your Campus. Your Meals.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=13">
-<title>HAVFOOD</title>
+<link rel="stylesheet" href="style.css?v=14">
+<title>DINELY</title>
 </head>
 <body>
 <div id="app">
 <header class="topbar">
   <div class="brand">
-    <img src="icons/havfood-logo.png" alt="HAVFOOD" class="brand-logo">
+    <div class="brand-wordmark">
+      <span class="brand-d">D</span><span class="brand-inely">INELY</span>
+    </div>
     <span id="adminBadge" class="admin-badge hidden">ADMIN</span>
   </div>
   <div class="topbar-actions">
     <button id="profileBtn" class="profile-btn" aria-label="Profiles" title="Profile">👤</button>
-    <button id="installBtn" class="icon-btn hidden" aria-label="Install HAVFOOD">＋</button>
+    <button id="installBtn" class="icon-btn hidden" aria-label="Install DINELY">＋</button>
     <button id="hfHamburger" class="hamburger-btn" aria-label="Open menu">☰</button>
   </div>
 </header>
 
 <!-- PWA Update Notification Banner -->
 <div id="pwaUpdateBanner" class="pwa-update-banner hidden">
-  <span>New HAVFOOD update available</span>
+  <span>New DINELY update available</span>
   <button id="pwaUpdateRefreshBtn">Refresh to update</button>
 </div>
 
@@ -37,15 +39,30 @@
   <div id="studentView">
     <section class="hero">
       <div>
-        <p class="eyebrow">VIT-AP MESS MENU</p>
+        <p class="eyebrow">VIT-AP CAMPUS DINING</p>
         <h1 id="heroDate">Today</h1>
-        <p id="heroSub">Your meals, without the search.</p>
+        <p id="heroSub">Your campus. Your meals.</p>
       </div>
       <button id="calendarBtn" class="date-btn">📅 <span>Jump to date</span></button>
     </section>
 
-    <!-- Meal-Wise Actor Greeting Card -->
-    <div id="hfActorCard" class="hf-actor-card hidden" aria-live="polite"></div>
+    <!-- Meal Greeting Banner (food-focused, no actors) -->
+    <div id="dnMealBanner" class="dn-meal-banner hidden" aria-live="polite"></div>
+
+    <!-- Student Profile Card -->
+    <section id="studentProfileCard" class="student-profile-card hidden">
+      <div class="spc-header">
+        <span class="spc-avatar">🎓</span>
+        <div class="spc-info">
+          <b id="spcName">Student</b>
+          <small id="spcId" class="muted"></small>
+        </div>
+        <button class="spc-edit-btn" id="spcEditBtn">✏️ Edit</button>
+      </div>
+      <div class="spc-details">
+        <span class="spc-tag" id="spcMessTag">—</span>
+      </div>
+    </section>
 
     <section class="status-card">
       <div class="status-icon">🍽️</div>
@@ -58,16 +75,21 @@
     </section>
 
     <section class="segmented" aria-label="Mess selection">
-      <button class="active" data-mess="Veg & Non-Veg">Veg & Non-Veg</button>
-      <button data-mess="Special">Special Mess</button>
+      <button class="active" data-mess="Veg Mess">🥗 Veg</button>
+      <button data-mess="Non-Veg Mess">🍗 Non-Veg</button>
+      <button data-mess="Special">⭐ Special</button>
     </section>
 
     <section id="messDetails" aria-label="Mess Details">
-      <div class="section-head"><h2>🍽️ Mess Details</h2><span class="muted"><span class="brand-hav">HAV</span><span class="brand-food">FOOD</span></span></div>
+      <div class="section-head"><h2>🍽️ Mess Details</h2><span class="muted"><span class="brand-d">D</span><span class="brand-inely">INELY</span></span></div>
       <div class="details-grid">
         <article class="detail-card">
           <div class="detail-icon">🥗</div>
-          <div><b>Veg &amp; Non-Veg Mess</b><small>Regular mess menu available in the selector above.</small></div>
+          <div><b>Veg Mess</b><small>Vegetarian menu available in the selector above.</small></div>
+        </article>
+        <article class="detail-card">
+          <div class="detail-icon">🍗</div>
+          <div><b>Non-Veg Mess</b><small>Non-vegetarian menu available in the selector above.</small></div>
         </article>
         <article class="detail-card">
           <div class="detail-icon">⭐</div>
@@ -155,7 +177,7 @@
         </div>
       </div>
 
-      <!-- Step-by-Step GitHub + Netlify Deployment Guide -->
+      <!-- Step-by-Step Deployment Guide -->
       <div id="githubPublishGuide" class="publish-guide-card hidden">
         <div class="publish-guide-head">
           <span class="guide-badge">₹0 SHARED MENU WORKFLOW</span>
@@ -173,7 +195,7 @@
           <span class="step-num">2</span>
           <div class="step-text">
             <b>Replace in Project</b>
-            <p>Place the downloaded file into <code>HAVFOOD_FINAL_ONE_AND_DONE/menu-data.js</code> in your local repository.</p>
+            <p>Place the downloaded file into <code>DINELY/menu-data.js</code> in your local repository.</p>
           </div>
         </div>
         <div class="step-card">
@@ -190,7 +212,7 @@ git push origin main</code></pre>
           <span class="step-num">4</span>
           <div class="step-text">
             <b>Netlify Automatic Deployment (₹0)</b>
-            <p>Netlify detects the GitHub push and deploys the updated app in ~30 seconds. Next time students open HAVFOOD, the new month will be available in "Change Month".</p>
+            <p>Netlify detects the GitHub push and deploys the updated app in ~30 seconds. Next time students open DINELY, the new month will be available in "Change Month".</p>
           </div>
         </div>
         <p class="guide-note"><b>Publishing Status:</b> <span id="publishStatusText" class="status-pill pending">Awaiting Excel Validation</span></p>
@@ -203,16 +225,30 @@ git push origin main</code></pre>
         <div class="admin-icon-badge">📅</div>
         <div>
           <h2>Available Monthly Menus</h2>
-          <p class="muted">Months currently stored and accessible in HAVFOOD</p>
+          <p class="muted">Months currently stored and accessible in DINELY</p>
         </div>
       </div>
       <div id="adminMonthsList" class="stored-months-list"></div>
     </div>
 
-    <!-- Zero-Cost Shared Architecture Notice -->
+    <!-- Student Queries & Suggestions (Admin View) -->
+    <div class="admin-card">
+      <div class="admin-card-head">
+        <div class="admin-icon-badge">💬</div>
+        <div>
+          <h2>Student Queries &amp; Suggestions</h2>
+          <p class="muted">Review feedback submitted by students</p>
+        </div>
+      </div>
+      <div id="adminQueriesList" class="admin-queries-list">
+        <p class="muted" style="padding:12px 0;">Loading student submissions…</p>
+      </div>
+    </div>
+
+    <!-- Zero-Cost Architecture Notice -->
     <div class="admin-info-banner">
       <b>₹0 Shared Menu Architecture (GitHub + Netlify)</b>
-      <p>HAVFOOD operates on a ₹0 static PWA architecture. Official Excel menus are parsed client-side, validated, and exported into <code>menu-data.js</code>. Committing this file to GitHub triggers Netlify's automatic CDN deployment. All students receive the updated menu on their devices with zero cloud database costs.</p>
+      <p>DINELY operates on a ₹0 static PWA architecture. Official Excel menus are parsed and stored in the shared Supabase database. All students receive the updated menu on their devices after upload. App auto-syncs on startup.</p>
     </div>
   </section>
 </main>
@@ -255,11 +291,44 @@ git push origin main</code></pre>
  </div>
 </div>
 
+<!-- Student Profile Modal -->
+<div id="studentProfileModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>My Profile</h3>
+      <button data-close="studentProfileModal" aria-label="Close">×</button>
+    </div>
+    <form id="studentProfileForm" autocomplete="off">
+      <div class="hf-field">
+        <label for="spfName">Your Name</label>
+        <input type="text" id="spfName" class="hf-select" placeholder="e.g. Ravi Kumar" maxlength="60">
+      </div>
+      <div class="hf-field">
+        <label for="spfId">Student ID (optional)</label>
+        <input type="text" id="spfId" class="hf-select" placeholder="e.g. 22BCE1234" maxlength="20">
+      </div>
+      <div class="hf-field">
+        <label for="spfMess">Preferred Mess</label>
+        <select id="spfMess" class="hf-select">
+          <option value="Veg Mess">🥗 Veg Mess</option>
+          <option value="Non-Veg Mess">🍗 Non-Veg Mess</option>
+          <option value="Special">⭐ Special Mess</option>
+        </select>
+      </div>
+      <button type="submit" class="primary" style="margin-top:10px;">Save Profile</button>
+    </form>
+    <div class="hf-field" style="margin-top:16px;">
+      <label>Past Queries &amp; Suggestions</label>
+      <div id="spfQueryHistory" class="spf-query-history"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Profile Switcher Modal -->
 <div id="profileModal" class="modal hidden">
   <div class="modal-card">
     <div class="modal-head">
-      <h3>HAVFOOD Profiles</h3>
+      <h3>DINELY Profiles</h3>
       <button data-close="profileModal" aria-label="Close">×</button>
     </div>
     <div class="profile-current-badge">
@@ -283,6 +352,9 @@ git push origin main</code></pre>
         </div>
         <button id="btnProfileAdminAction" class="secondary-btn-compact">Log In</button>
       </div>
+    </div>
+    <div style="margin-top:14px; border-top:1px solid var(--border-subtle); padding-top:14px;">
+      <button class="secondary-btn-compact" id="openStudentProfileModalBtn" style="width:100%;justify-content:center;">✏️ Edit Student Profile</button>
     </div>
   </div>
 </div>
@@ -382,8 +454,8 @@ git push origin main</code></pre>
 
 <div id="toast" class="toast"></div>
 </div>
-<script src="actor.js?v=13"></script>
+<script src="meal-banner.js?v=14"></script>
 <script src="menu-data.js?v=8"></script>
-<script src="script.js?v=13"></script>
+<script src="script.js?v=14"></script>
 </body>
 </html>

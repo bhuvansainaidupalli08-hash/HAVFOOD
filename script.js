@@ -1,6 +1,6 @@
 (() => {
   // ============================================================================
-  // HAVFOOD — CORE & IMPORTED MENU INITIALIZATION
+  // DINELY — CORE & IMPORTED MENU INITIALIZATION
   // ============================================================================
   const MEAL_TIMES = {
     Breakfast: ["07:30", "09:30"],
@@ -16,12 +16,23 @@
     return x.toISOString().slice(0, 10);
   }
 
+  // ============================================================================
+  // MESS KEY MAPPING
+  // "Veg Mess" and "Non-Veg Mess" both map to "Veg & Non-Veg" data key
+  // "Special" maps to "Special" data key
+  // ============================================================================
+  function getDataKey(messLabel) {
+    if (messLabel === "Veg Mess" || messLabel === "Non-Veg Mess") {
+      return "Veg & Non-Veg";
+    }
+    return messLabel; // "Special" stays as "Special"
+  }
 
   // Load imported & cached monthly menus into window.HAVFOOD_MENU
   function loadImportedMenus() {
     try {
-      // 1. Cached backend menu from shared online database (instant offline / startup render)
-      const cachedBackend = localStorage.getItem("havfood_cached_backend_menu");
+      const cachedBackend = localStorage.getItem("dinely_cached_backend_menu")
+        || localStorage.getItem("havfood_cached_backend_menu"); // legacy key support
       if (cachedBackend) {
         const parsed = JSON.parse(cachedBackend);
         if (!window.HAVFOOD_MENU) window.HAVFOOD_MENU = {};
@@ -33,8 +44,8 @@
         }
       }
 
-      // 2. Any local imported menus (if present)
-      const raw = localStorage.getItem("havfood_imported_menus");
+      const raw = localStorage.getItem("dinely_imported_menus")
+        || localStorage.getItem("havfood_imported_menus");
       if (raw) {
         const imported = JSON.parse(raw);
         if (!window.HAVFOOD_MENU) window.HAVFOOD_MENU = {};
@@ -52,8 +63,9 @@
   loadImportedMenus();
 
   function getApiBaseUrl() {
+    if (window.DINELY_API_URL) return window.DINELY_API_URL.replace(/\/+$/, "");
     if (window.HAVFOOD_API_URL) return window.HAVFOOD_API_URL.replace(/\/+$/, "");
-    const stored = localStorage.getItem("havfood_api_url");
+    const stored = localStorage.getItem("dinely_api_url") || localStorage.getItem("havfood_api_url");
     if (stored) return stored.replace(/\/+$/, "");
     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
       return "http://localhost:5000";
@@ -63,9 +75,7 @@
 
   async function loadMenuFromBackend() {
     const baseUrl = getApiBaseUrl();
-    if (!baseUrl) {
-      return;
-    }
+    if (!baseUrl) return;
 
     try {
       const controller = new AbortController();
@@ -86,7 +96,6 @@
         throw new Error("Invalid menu data received from backend");
       }
 
-      // Merge into window.HAVFOOD_MENU — never overwrite September 2026 built-in data!
       if (!window.HAVFOOD_MENU) window.HAVFOOD_MENU = {};
       for (const messType of Object.keys(result.data)) {
         if (!window.HAVFOOD_MENU[messType]) {
@@ -95,19 +104,17 @@
         Object.assign(window.HAVFOOD_MENU[messType], result.data[messType]);
       }
 
-      // Cache to localStorage for instant startup on future opens
       try {
-        localStorage.setItem("havfood_cached_backend_menu", JSON.stringify(result.data));
-      } catch (_) {}
+        localStorage.setItem("dinely_cached_backend_menu", JSON.stringify(result.data));
+      } catch (_) { }
 
-      // Re-render UI with merged data
       if (activeProfile === "admin") {
         renderAdminDashboard();
       } else {
         render();
       }
 
-      console.log("✅ HAVFOOD menu synced from shared online database");
+      console.log("✅ DINELY menu synced from shared online database");
     } catch (error) {
       console.warn("ℹ️ Background menu sync info:", error.message || error);
     }
@@ -115,23 +122,123 @@
 
   // App State
   let selectedDate = localISO(new Date());
-  let mess = localStorage.getItem("havfood_mess") || "Veg & Non-Veg";
-  let activeProfile = sessionStorage.getItem("havfood_active_profile") || "student";
+  // Migrate legacy mess key to new DINELY keys
+  function migrateMess(raw) {
+    if (!raw || raw === "Veg & Non-Veg") return "Veg Mess";
+    if (raw === "Veg Mess" || raw === "Non-Veg Mess" || raw === "Special") return raw;
+    return "Veg Mess";
+  }
+  let mess = migrateMess(localStorage.getItem("dinely_mess") || localStorage.getItem("havfood_mess"));
+  let activeProfile = sessionStorage.getItem("dinely_active_profile") || sessionStorage.getItem("havfood_active_profile") || "student";
 
   // Reminder Preferences (belongs to Student Profile)
-  let reminderMinutes = Number(localStorage.getItem("havfoodReminderMinutes") || 10);
-  let mealEndReminderMinutes = Number(localStorage.getItem("havfoodMealEndReminderMinutes") || 15);
+  let reminderMinutes = Number(localStorage.getItem("dinelyReminderMinutes") || localStorage.getItem("havfoodReminderMinutes") || 10);
+  let mealEndReminderMinutes = Number(localStorage.getItem("dinelyMealEndReminderMinutes") || localStorage.getItem("havfoodMealEndReminderMinutes") || 15);
   let reminderMeals = (() => {
     try {
-      const m = JSON.parse(localStorage.getItem("havfoodReminderMeals") || "null");
+      const m = JSON.parse(localStorage.getItem("dinelyReminderMeals") || localStorage.getItem("havfoodReminderMeals") || "null");
       return Array.isArray(m) && m.length ? m : [...ALL_MEALS];
     } catch (_) {
       return [...ALL_MEALS];
     }
   })();
 
+  // ============================================================================
+  // STUDENT PROFILE
+  // ============================================================================
+  let studentProfile = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("dinely_student_profile") || "{}") || {};
+    } catch (_) { return {}; }
+  })();
+
+  function saveStudentProfile(data) {
+    studentProfile = { ...studentProfile, ...data };
+    localStorage.setItem("dinely_student_profile", JSON.stringify(studentProfile));
+  }
+
+  function renderStudentProfileCard() {
+    const card = $("studentProfileCard");
+    if (!card) return;
+    if (!studentProfile.name) {
+      card.classList.add("hidden");
+      return;
+    }
+    card.classList.remove("hidden");
+    const nameEl = $("spcName");
+    const idEl = $("spcId");
+    const messTagEl = $("spcMessTag");
+    if (nameEl) nameEl.textContent = studentProfile.name || "Student";
+    if (idEl) idEl.textContent = studentProfile.studentId || "";
+    if (messTagEl) messTagEl.textContent = mess;
+  }
+
+  // Student profile modal setup
+  function openStudentProfileModal() {
+    const form = $("studentProfileForm");
+    if (!form) return;
+    const nameInput = $("spfName");
+    const idInput = $("spfId");
+    const messSelect = $("spfMess");
+    if (nameInput) nameInput.value = studentProfile.name || "";
+    if (idInput) idInput.value = studentProfile.studentId || "";
+    if (messSelect) messSelect.value = mess;
+    renderQueryHistory();
+    $("studentProfileModal").classList.remove("hidden");
+  }
+
+  if ($("spfEditBtn") || $("spcEditBtn")) {
+    const editBtn = $("spcEditBtn");
+    if (editBtn) editBtn.onclick = openStudentProfileModal;
+  }
+
+  const openStudentProfileBtn = $("openStudentProfileModalBtn");
+  if (openStudentProfileBtn) {
+    openStudentProfileBtn.onclick = () => {
+      $("profileModal").classList.add("hidden");
+      openStudentProfileModal();
+    };
+  }
+
+  const studentProfileForm = $("studentProfileForm");
+  if (studentProfileForm) {
+    studentProfileForm.onsubmit = (e) => {
+      e.preventDefault();
+      const name = ($("spfName") ? $("spfName").value.trim() : "") || "";
+      const studentId = ($("spfId") ? $("spfId").value.trim() : "") || "";
+      const chosenMess = $("spfMess") ? $("spfMess").value : mess;
+
+      saveStudentProfile({ name, studentId });
+      mess = chosenMess;
+      localStorage.setItem("dinely_mess", mess);
+      updateMessUI();
+      renderStudentProfileCard();
+      render();
+
+      $("studentProfileModal").classList.add("hidden");
+      toast("Profile saved successfully!");
+    };
+  }
+
+  function renderQueryHistory() {
+    const container = $("spfQueryHistory");
+    if (!container) return;
+    const stored = JSON.parse(localStorage.getItem("dinely_queries") || localStorage.getItem("havfood_queries") || "[]");
+    if (!stored.length) {
+      container.innerHTML = '<p class="muted" style="font-size:12px;padding:4px 0;">No submissions yet.</p>';
+      return;
+    }
+    container.innerHTML = stored.slice(-5).reverse().map(q => `
+      <div class="spf-query-item">
+        <b>${escapeHtml(q.category || "Query")}</b>
+        <p>${escapeHtml(q.message || "")}</p>
+      </div>
+    `).join("");
+  }
+
   function normalizeRows(date) {
-    const sheet = window.HAVFOOD_MENU?.[mess] || {};
+    const dataKey = getDataKey(mess);
+    const sheet = window.HAVFOOD_MENU?.[dataKey] || {};
     const day = sheet[date] || {};
     return {
       Breakfast: Array.isArray(day.Breakfast) ? day.Breakfast : [],
@@ -154,7 +261,6 @@
   }
 
   function mealState() {
-    // Strict requirement: Current time ONLY controls meal state when selectedDate === today's local date
     if (!isToday(selectedDate)) {
       return {
         label: "MENU FOR",
@@ -216,9 +322,9 @@
     $("statusTime").textContent = s.time || (isToday(selectedDate) ? "All meals" : "Full day menu");
     $("countdown").textContent = s.remaining == null ? "" : clock(s.remaining);
 
-    // Meal-Wise Actor Card (Shah Rukh Khan, Allu Arjun, Mammootty, Bramhanandham)
-    if (window.HAVFOOD_ACTOR && typeof window.HAVFOOD_ACTOR.render === "function") {
-      window.HAVFOOD_ACTOR.render();
+    // DINELY Meal Banner (food-focused, no actors)
+    if (window.DINELY_BANNER && typeof window.DINELY_BANNER.render === "function") {
+      window.DINELY_BANNER.render();
     }
   }
 
@@ -284,6 +390,7 @@
     renderStatus();
     renderWeek();
     renderMenu();
+    renderStudentProfileCard();
     if ($("datePicker")) $("datePicker").value = selectedDate;
   }
 
@@ -316,8 +423,9 @@
   document.querySelectorAll("[data-mess]").forEach(b => {
     b.onclick = () => {
       mess = b.dataset.mess;
-      localStorage.setItem("havfood_mess", mess);
+      localStorage.setItem("dinely_mess", mess);
       updateMessUI();
+      renderStudentProfileCard();
       render();
     };
   });
@@ -337,7 +445,6 @@
 
   // ============================================================================
   // HAMBURGER MENU DRAWER
-  // Options strictly: Reminder, Change Month, Queries & Suggestions
   // ============================================================================
   $("hfHamburger").onclick = () => {
     $("hfMenuOverlay").classList.remove("hidden");
@@ -352,7 +459,7 @@
   };
 
   // ============================================================================
-  // REMINDER SYSTEM FIX & MEAL-END REMINDERS
+  // REMINDER SYSTEM & MEAL-END REMINDERS
   // ============================================================================
   function urlBase64ToUint8Array(base64String) {
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -375,8 +482,8 @@
       return null;
     }
 
-    const startOn = localStorage.getItem("havfoodReminders") === "on";
-    const endOn = localStorage.getItem("havfoodMealEndEnabled") === "on";
+    const startOn = localStorage.getItem("dinelyReminders") === "on";
+    const endOn = localStorage.getItem("dinelyMealEndEnabled") === "on";
     if (!startOn && !endOn) {
       return null;
     }
@@ -426,11 +533,11 @@
       });
 
       if (res.ok) {
-        console.log("✅ Web Push subscription synced with backend");
+        console.log("✅ DINELY Web Push subscription synced with backend");
         return sub;
       }
     } catch (err) {
-      console.warn("ℹ️ Web Push subscription sync:", err.message || err);
+      console.warn("ℹ️ DINELY Web Push subscription sync:", err.message || err);
     }
     return null;
   }
@@ -449,8 +556,8 @@
       badge.textContent = "⚠️ Blocked. Enable notifications in site/browser settings.";
       return;
     }
-    const startOn = localStorage.getItem("havfoodReminders") === "on";
-    const endOn = localStorage.getItem("havfoodMealEndEnabled") === "on";
+    const startOn = localStorage.getItem("dinelyReminders") === "on";
+    const endOn = localStorage.getItem("dinelyMealEndEnabled") === "on";
 
     if (perm === "granted" && (startOn || endOn)) {
       let pushActive = false;
@@ -459,7 +566,7 @@
           const reg = await navigator.serviceWorker.ready;
           const sub = await reg.pushManager.getSubscription();
           if (sub) pushActive = true;
-        } catch (_) {}
+        } catch (_) { }
       }
       badge.className = "perm-badge granted";
       badge.textContent = pushActive
@@ -477,7 +584,6 @@
   function setupReminders() {
     updatePermissionBadge();
 
-    // 1. Meal selector chips (Breakfast, Lunch, Snacks, Dinner)
     const mealChips = $("reminderMealChips");
     if (mealChips) {
       mealChips.querySelectorAll(".meal-chip").forEach(b => {
@@ -494,14 +600,13 @@
           } else {
             reminderMeals.push(m);
           }
-          localStorage.setItem("havfoodReminderMeals", JSON.stringify(reminderMeals));
+          localStorage.setItem("dinelyReminderMeals", JSON.stringify(reminderMeals));
           b.classList.toggle("active", reminderMeals.includes(m));
           syncPushSubscription();
         };
       });
     }
 
-    // 2. Meal Start Options (5, 10, 15, 20, 30 min)
     const startOpts = [5, 10, 15, 20, 30];
     $("reminderOptions").innerHTML = startOpts.map(n =>
       `<button data-start-min="${n}" class="${n === reminderMinutes ? "active" : ""}">${n} min</button>`
@@ -509,14 +614,13 @@
     $("reminderOptions").querySelectorAll("[data-start-min]").forEach(b => {
       b.onclick = () => {
         reminderMinutes = Number(b.dataset.startMin);
-        localStorage.setItem("havfoodReminderMinutes", reminderMinutes);
+        localStorage.setItem("dinelyReminderMinutes", reminderMinutes);
         $("reminderOptions").querySelectorAll("[data-start-min]").forEach(x => x.classList.toggle("active", x === b));
         toast(`Meal-start reminder: ${reminderMinutes} min before`);
         syncPushSubscription();
       };
     });
 
-    // 3. Meal End Options (5, 10, 15, 30 min)
     const endOpts = [5, 10, 15, 30];
     $("mealEndOptions").innerHTML = endOpts.map(n =>
       `<button data-end-min="${n}" class="${n === mealEndReminderMinutes ? "active" : ""}">${n} min</button>`
@@ -524,47 +628,46 @@
     $("mealEndOptions").querySelectorAll("[data-end-min]").forEach(b => {
       b.onclick = () => {
         mealEndReminderMinutes = Number(b.dataset.endMin);
-        localStorage.setItem("havfoodMealEndReminderMinutes", mealEndReminderMinutes);
+        localStorage.setItem("dinelyMealEndReminderMinutes", mealEndReminderMinutes);
         $("mealEndOptions").querySelectorAll("[data-end-min]").forEach(x => x.classList.toggle("active", x === b));
         toast(`Meal-end reminder: ${mealEndReminderMinutes} min before end`);
         syncPushSubscription();
       };
     });
 
-    // 4. Main toggles
     const startToggle = $("reminderToggle");
-    startToggle.checked = localStorage.getItem("havfoodReminders") === "on";
+    startToggle.checked = localStorage.getItem("dinelyReminders") === "on";
     startToggle.onchange = async () => {
       if (startToggle.checked) {
         const granted = await requestNotifPermission();
         if (granted) {
-          localStorage.setItem("havfoodReminders", "on");
+          localStorage.setItem("dinelyReminders", "on");
           toast("Meal-start reminders enabled");
           syncPushSubscription().finally(updatePermissionBadge);
         } else {
           startToggle.checked = false;
         }
       } else {
-        localStorage.setItem("havfoodReminders", "off");
+        localStorage.setItem("dinelyReminders", "off");
         toast("Meal-start reminders disabled");
       }
       updatePermissionBadge();
     };
 
     const endToggle = $("mealEndToggle");
-    endToggle.checked = localStorage.getItem("havfoodMealEndEnabled") === "on";
+    endToggle.checked = localStorage.getItem("dinelyMealEndEnabled") === "on";
     endToggle.onchange = async () => {
       if (endToggle.checked) {
         const granted = await requestNotifPermission();
         if (granted) {
-          localStorage.setItem("havfoodMealEndEnabled", "on");
+          localStorage.setItem("dinelyMealEndEnabled", "on");
           toast("Meal-end reminders enabled");
           syncPushSubscription().finally(updatePermissionBadge);
         } else {
           endToggle.checked = false;
         }
       } else {
-        localStorage.setItem("havfoodMealEndEnabled", "off");
+        localStorage.setItem("dinelyMealEndEnabled", "off");
         toast("Meal-end reminders disabled");
       }
       updatePermissionBadge();
@@ -620,10 +723,9 @@
     toast(`${title}: ${body}`);
   }
 
-  // Active reminder loop checker (runs every 15s)
   function checkReminders() {
-    const startOn = localStorage.getItem("havfoodReminders") === "on";
-    const endOn = localStorage.getItem("havfoodMealEndEnabled") === "on";
+    const startOn = localStorage.getItem("dinelyReminders") === "on";
+    const endOn = localStorage.getItem("dinelyMealEndEnabled") === "on";
     if (!startOn && !endOn) return;
     if (!("Notification" in window) || Notification.permission !== "granted") return;
 
@@ -639,30 +741,28 @@
       const startTotal = startH * 60 + startM;
       const endTotal = endH * 60 + endM;
 
-      // Meal Start Alert
       if (startOn) {
         const targetStart = startTotal - reminderMinutes;
         if (targetStart >= 0 && currentTotalMins >= targetStart && currentTotalMins <= targetStart + 2) {
-          const key = `havfood_fired_start_${todayIso}_${meal}_${reminderMinutes}`;
+          const key = `dinely_fired_start_${todayIso}_${meal}_${reminderMinutes}`;
           if (!localStorage.getItem(key)) {
             localStorage.setItem(key, "1");
             fireNotification(
-              `HAVFOOD — ${meal} Starts Soon`,
+              `DINELY — ${meal} Starts Soon`,
               `${meal} starts in ${reminderMinutes} minutes (${times[0]} – ${times[1]}). Check today's menu!`
             );
           }
         }
       }
 
-      // Meal End Alert
       if (endOn) {
         const targetEnd = endTotal - mealEndReminderMinutes;
         if (targetEnd >= 0 && currentTotalMins >= targetEnd && currentTotalMins <= targetEnd + 2) {
-          const key = `havfood_fired_end_${todayIso}_${meal}_${mealEndReminderMinutes}`;
+          const key = `dinely_fired_end_${todayIso}_${meal}_${mealEndReminderMinutes}`;
           if (!localStorage.getItem(key)) {
             localStorage.setItem(key, "1");
             fireNotification(
-              `HAVFOOD — ${meal} Ending Soon`,
+              `DINELY — ${meal} Ending Soon`,
               `${meal} ends in ${mealEndReminderMinutes} minutes at ${times[1]}. Don't miss your meal!`
             );
           }
@@ -683,7 +783,7 @@
   $("testNotifBtn").onclick = async () => {
     const granted = await requestNotifPermission();
     if (granted) {
-      fireNotification("HAVFOOD Reminder Test", "Meal notifications are functioning properly on this device!");
+      fireNotification("DINELY Reminder Test", "Meal notifications are functioning properly on this device!");
       const baseUrl = getApiBaseUrl();
       if (baseUrl && "serviceWorker" in navigator && "PushManager" in window) {
         try {
@@ -703,9 +803,9 @@
                   }
                 }
               })
-            }).catch(() => {});
+            }).catch(() => { });
           }
-        } catch (_) {}
+        } catch (_) { }
       }
     }
   };
@@ -717,7 +817,7 @@
   };
 
   // ============================================================================
-  // CHANGE MONTH (Dynamic from menu data)
+  // CHANGE MONTH
   // ============================================================================
   function getAvailableMonths() {
     const data = window.HAVFOOD_MENU || {};
@@ -807,13 +907,15 @@
       id: "Q" + Date.now(),
       category,
       message,
+      studentName: studentProfile.name || "",
+      studentId: studentProfile.studentId || "",
       createdAt: new Date().toISOString(),
       status: "Pending"
     };
 
-    const stored = JSON.parse(localStorage.getItem("havfood_queries") || "[]");
+    const stored = JSON.parse(localStorage.getItem("dinely_queries") || localStorage.getItem("havfood_queries") || "[]");
     stored.push(submission);
-    localStorage.setItem("havfood_queries", JSON.stringify(stored));
+    localStorage.setItem("dinely_queries", JSON.stringify(stored));
 
     $("hfQueryMessage").value = "";
     const statusEl = $("hfQuerySuccess");
@@ -846,14 +948,13 @@
 
   function switchProfile(profile) {
     activeProfile = profile;
-    sessionStorage.setItem("havfood_active_profile", profile);
+    sessionStorage.setItem("dinely_active_profile", profile);
 
     const isAdm = profile === "admin";
     $("studentView").classList.toggle("hidden", isAdm);
     $("adminView").classList.toggle("hidden", !isAdm);
     $("adminBadge").classList.toggle("hidden", !isAdm);
 
-    // Update profile modal UI
     $("activeProfileName").textContent = isAdm ? "Admin Profile (mess_incharge)" : "Student Profile";
     $("optStudentProfile").classList.toggle("active", !isAdm);
     $("optAdminProfile").classList.toggle("active", isAdm);
@@ -872,8 +973,9 @@
     }
 
     if (isAdm) {
-      ensureSheetJSLoaded().catch(() => {});
+      ensureSheetJSLoaded().catch(() => { });
       renderAdminDashboard();
+      renderAdminQueries();
     } else {
       render();
     }
@@ -909,13 +1011,32 @@
   };
 
   // ============================================================================
+  // ADMIN QUERIES VIEW
+  // ============================================================================
+  function renderAdminQueries() {
+    const container = $("adminQueriesList");
+    if (!container) return;
+
+    const stored = JSON.parse(localStorage.getItem("dinely_queries") || localStorage.getItem("havfood_queries") || "[]");
+
+    if (!stored.length) {
+      container.innerHTML = '<p class="muted" style="padding:12px 0;">No student submissions yet.</p>';
+      return;
+    }
+
+    container.innerHTML = stored.slice().reverse().map(q => `
+      <div class="admin-query-card">
+        <div class="admin-query-card-top">
+          <span class="admin-query-cat">${escapeHtml(q.category || "Query")}</span>
+          <span class="admin-query-date">${q.studentName ? escapeHtml(q.studentName) + (q.studentId ? " · " + escapeHtml(q.studentId) : "") + " · " : ""}${new Date(q.createdAt).toLocaleDateString("en-IN")}</span>
+        </div>
+        <p class="admin-query-msg">${escapeHtml(q.message || "")}</p>
+      </div>
+    `).join("");
+  }
+
+  // ============================================================================
   // ADMIN AUTHENTICATION
-  // Credentials: mess_incharge / @VITmess123
-  //
-  // SECURITY LIMITATION NOTICE:
-  // The login verification below is a frontend access gate appropriate for this
-  // client-side static PWA. Production deployment authentication should be
-  // migrated to Firebase Auth, Supabase, or another secure backend service.
   // ============================================================================
   const ADMIN_USER = "mess_incharge";
   const ADMIN_PASS = "@VITmess123";
@@ -948,35 +1069,23 @@
   $("adminLogoutBtn").onclick = logoutAdmin;
   $("adminBackToStudentBtn").onclick = () => {
     switchProfile("student");
-    toast("Viewing Student Profile menu");
+    toast("Viewing Student menu");
   };
 
   // ============================================================================
+  // ADMIN DASHBOARD & EXCEL MENU IMPORTER
   // ============================================================================
-  // ADMIN DASHBOARD & EXCEL MENU IMPORTER — BACKEND VERSION
-  // ============================================================================
-  // Excel files are now uploaded to the Node/Express backend.
-  // The backend parses the workbook and stores the menu in SQLite.
-  // This keeps the existing HAVFOOD UI, profile system, reminder system,
-  // hamburger menu, PWA install flow and all other original functionality.
-  // ============================================================================
-
   let selectedExcelFile = null;
   let adminSelectedMonth = "";
 
   function setExportButtonsState(enabled) {
-    const ids = [
-      "btnDownloadMenuJs",
-      "btnCopyMenuJs",
-      "btnSaveLocal"
-    ];
-
-    ids.forEach(id => {
+    ["btnDownloadMenuJs", "btnCopyMenuJs", "btnSaveLocal"].forEach(id => {
       const el = $(id);
       if (!el) return;
       el.disabled = !enabled;
     });
   }
+
   function renderAdminDashboard() {
     const monthEl = $("excelMonthInput");
 
@@ -987,12 +1096,7 @@
         adminSelectedMonth = monthEl.value;
       } else {
         const now = new Date();
-        const nextMonth = new Date(
-          now.getFullYear(),
-          now.getMonth() + 1,
-          1
-        );
-
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
         adminSelectedMonth = localISO(nextMonth).slice(0, 7);
         monthEl.value = adminSelectedMonth;
       }
@@ -1010,11 +1114,10 @@
 
     list.innerHTML = available.map(ym => {
       const [y, m] = ym.split("-").map(Number);
-      const label = new Date(y, m - 1, 1)
-        .toLocaleDateString("en-US", {
-          month: "long",
-          year: "numeric"
-        });
+      const label = new Date(y, m - 1, 1).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric"
+      });
 
       const isBuiltin = ym === "2026-09";
 
@@ -1022,27 +1125,18 @@
         <div class="month-item-card">
           <div class="month-item-info">
             <b>${label} (${ym})</b>
-            <small>
-              ${isBuiltin
-                ? "Permanent Official Menu — Built-in"
-                : "Stored in HAVFOOD Database"}
-            </small>
+            <small>${isBuiltin ? "Permanent Official Menu — Built-in" : "Stored in DINELY Database"}</small>
           </div>
-
           <div class="month-item-actions">
-            <span class="builtin-tag">
-              ${isBuiltin ? "Built-in" : "Database"}
-            </span>
+            <span class="builtin-tag">${isBuiltin ? "Built-in" : "Database"}</span>
           </div>
         </div>
       `;
     }).join("");
   }
 
-  // Database deletion is intentionally not exposed from the frontend yet.
-  // This prevents accidentally deleting a month's shared database data.
   function deleteImportedMonth(ym) {
-    toast(`${ym} is stored in the HAVFOOD database. No frontend deletion is enabled.`);
+    toast(`${ym} is stored in the DINELY database. No frontend deletion is enabled.`);
   }
 
   const dropLabel = $("excelDropLabel");
@@ -1075,10 +1169,7 @@
     });
 
     dropLabel.addEventListener("drop", e => {
-      if (
-        e.dataTransfer.files &&
-        e.dataTransfer.files[0]
-      ) {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
         handleExcelFile(e.dataTransfer.files[0]);
       }
     });
@@ -1086,10 +1177,7 @@
 
   if (fileInput) {
     fileInput.addEventListener("change", e => {
-      if (
-        e.target.files &&
-        e.target.files[0]
-      ) {
+      if (e.target.files && e.target.files[0]) {
         handleExcelFile(e.target.files[0]);
       }
     });
@@ -1098,7 +1186,6 @@
   function showValidation(type, message) {
     const box = $("excelValidationBox");
     if (!box) return;
-
     box.className = `validation-box ${type}`;
     box.innerHTML = message;
     box.classList.remove("hidden");
@@ -1107,10 +1194,8 @@
   function resetExcelUI() {
     const preview = $("excelPreviewContainer");
     if (preview) preview.classList.add("hidden");
-
     const guide = $("githubPublishGuide");
     if (guide) guide.classList.add("hidden");
-
     const status = $("publishStatusText");
     if (status) {
       status.className = "status-pill pending";
@@ -1128,7 +1213,6 @@
     resetExcelUI();
     setExportButtonsState(false);
 
-    // Explicitly guarantee that the month field in the DOM is preserved
     if (monthEl && adminSelectedMonth) {
       monthEl.value = adminSelectedMonth;
     }
@@ -1136,18 +1220,12 @@
     const selectedMonth = adminSelectedMonth || (monthEl ? monthEl.value : "");
 
     if (!file || !file.name.match(/\.(xlsx|xls)$/i)) {
-      showValidation(
-        "error",
-        "<b>Invalid File Format</b><br>Please select an Excel file (.xlsx or .xls)."
-      );
+      showValidation("error", "<b>Invalid File Format</b><br>Please select an Excel file (.xlsx or .xls).");
       return;
     }
 
     if (!selectedMonth || !/^\d{4}-\d{2}$/.test(selectedMonth)) {
-      showValidation(
-        "error",
-        "<b>Select Month First</b><br>Please select a valid target month before uploading the Excel file."
-      );
+      showValidation("error", "<b>Select Month First</b><br>Please select a valid target month before uploading the Excel file.");
       return;
     }
 
@@ -1155,18 +1233,10 @@
 
     const title = $("excelDropTitle");
     if (title) title.textContent = file.name;
-
     const sub = $("excelDropSub");
-    if (sub) {
-      sub.textContent =
-        `${(file.size / 1024).toFixed(1)} KB — Selected for upload`;
-    }
+    if (sub) sub.textContent = `${(file.size / 1024).toFixed(1)} KB — Selected for upload`;
 
-    showValidation(
-      "loading",
-      `Uploading <b>${escapeHtml(file.name)}</b> for <b>${escapeHtml(selectedMonth)}</b> to the HAVFOOD shared database...`
-    );
-
+    showValidation("loading", `Uploading <b>${escapeHtml(file.name)}</b> for <b>${escapeHtml(selectedMonth)}</b> to the DINELY shared database...`);
     uploadExcelToBackend(file, selectedMonth);
   }
 
@@ -1177,36 +1247,20 @@
       formData.append("month", selectedMonth);
 
       const apiUrl = `${getApiBaseUrl()}/api/admin/menu`;
-      const response = await fetch(
-        apiUrl,
-        {
-          method: "POST",
-          body: formData
-        }
-      );
+      const response = await fetch(apiUrl, { method: "POST", body: formData });
 
       let result = null;
-
-      try {
-        result = await response.json();
-      } catch (_) {
-        result = null;
-      }
+      try { result = await response.json(); } catch (_) { result = null; }
 
       if (!response.ok || !result || !result.success) {
-        throw new Error(
-          result?.message ||
-          `Backend returned ${response.status}`
-        );
+        throw new Error(result?.message || `Backend returned ${response.status}`);
       }
 
-      const inserted =
-        Number(result.itemsInserted || 0);
+      const inserted = Number(result.itemsInserted || 0);
 
-      showValidation(
-        "success",
+      showValidation("success",
         `<b>Menu uploaded successfully!</b><br>` +
-        `${escapeHtml(monthLabel(selectedMonth))} is now stored in the shared HAVFOOD database.` +
+        `${escapeHtml(monthLabel(selectedMonth))} is now stored in the shared DINELY database.` +
         `<br>${inserted} menu items saved.`
       );
 
@@ -1216,28 +1270,17 @@
         status.textContent = "✅ Published to Shared Database";
       }
 
-      // Reload the frontend from the database so the new menu becomes visible.
       await loadMenuFromBackend();
       adminSelectedMonth = selectedMonth;
       renderAdminDashboard();
       const monthEl = $("excelMonthInput");
       if (monthEl) monthEl.value = adminSelectedMonth;
 
-      toast(
-        `✅ ${monthLabel(selectedMonth)} menu uploaded successfully.`
-      );
+      toast(`✅ ${monthLabel(selectedMonth)} menu uploaded successfully.`);
 
     } catch (error) {
-      console.error(
-        "❌ HAVFOOD Excel upload failed:",
-        error
-      );
-
-      showValidation(
-        "error",
-        `<b>Upload Failed</b><br>${escapeHtml(error.message || "Could not upload Excel file.")}`
-      );
-
+      console.error("❌ DINELY Excel upload failed:", error);
+      showValidation("error", `<b>Upload Failed</b><br>${escapeHtml(error.message || "Could not upload Excel file.")}`);
       const status = $("publishStatusText");
       if (status) {
         status.className = "status-pill pending";
@@ -1246,48 +1289,24 @@
     }
   }
 
-  // The old browser-side Excel parser/export flow is intentionally disabled.
-  // These compatibility functions prevent old HTML references from throwing.
   function processWorkbook() {
-    showValidation(
-      "error",
-      "The Excel parser now runs on the HAVFOOD backend. Please select the Excel file again."
-    );
+    showValidation("error", "The Excel parser runs on the DINELY backend. Please select the Excel file again.");
   }
-
-  function parseMenuRows() {
-    return {};
-  }
-
-  function parseDateCell() {
-    return null;
-  }
-
+  function parseMenuRows() { return {}; }
+  function parseDateCell() { return null; }
   function parseDishesForDate(value) {
     if (value === undefined || value === null) return [];
-    return String(value)
-      .split(",")
-      .map(x => x.trim())
-      .filter(Boolean);
+    return String(value).split(",").map(x => x.trim()).filter(Boolean);
   }
+  function splitDishItems(value) { return parseDishesForDate(value); }
 
-  function splitDishItems(value) {
-    return parseDishesForDate(value);
-  }
-
-  // Old export buttons remain part of the existing HTML, but they are no longer
-  // used because the database is now the source of truth.
-  [
-    "btnDownloadMenuJs",
-    "btnCopyMenuJs"
-  ].forEach(id => {
+  ["btnDownloadMenuJs", "btnCopyMenuJs"].forEach(id => {
     const btn = $(id);
     if (!btn) return;
-
     btn.disabled = true;
     btn.onclick = e => {
       e.preventDefault();
-      toast("Excel menus are now managed through the HAVFOOD database.");
+      toast("Excel menus are now managed through the DINELY database.");
     };
   });
 
@@ -1324,38 +1343,31 @@
 
   // ============================================================================
   // PWA SERVICE WORKER & RELIABLE MOBILE UPDATE LIFECYCLE
-  // Active update checks, visibility change refresh, and safe single reload
   // ============================================================================
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").then(reg => {
-        // 1. Actively request an update check from the network on startup
-        reg.update().catch(() => {});
+        reg.update().catch(() => { });
 
-        // 2. Check for updates whenever the mobile PWA is resumed from background
         document.addEventListener("visibilitychange", () => {
           if (document.visibilityState === "visible") {
-            reg.update().catch(() => {});
+            reg.update().catch(() => { });
           }
         });
 
-        // 3. Periodic background check every 30 minutes while app remains open
         setInterval(() => {
-          reg.update().catch(() => {});
+          reg.update().catch(() => { });
         }, 30 * 60 * 1000);
 
-        // Helper to prompt user when an updated worker is available
         const showUpdateBanner = () => {
           const banner = $("pwaUpdateBanner");
           if (banner) banner.classList.remove("hidden");
         };
 
-        // If a worker is already waiting in background, display banner immediately
         if (reg.waiting && navigator.serviceWorker.controller) {
           showUpdateBanner();
         }
 
-        // Listen for new worker installs
         reg.addEventListener("updatefound", () => {
           const newWorker = reg.installing;
           if (!newWorker) return;
@@ -1369,7 +1381,6 @@
         console.warn("[PWA] Service Worker registration failed:", err);
       });
 
-      // Safe, single-reload controller change handler (prevents reload loops)
       let refreshing = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (!refreshing) {
@@ -1400,10 +1411,10 @@
     render();
   }
 
-  // Asynchronously fetch latest menu from shared database in background (non-blocking)
+  // Asynchronously fetch latest menu from shared database (non-blocking)
   loadMenuFromBackend();
 
-  // Background/Foreground sync: re-sync and check reminders when app becomes visible
+  // Background/Foreground sync
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       loadMenuFromBackend();
